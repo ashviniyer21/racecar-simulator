@@ -15,9 +15,7 @@ class Car:
     def get_vel(self):
         return self.vel
     
-    def update(self, lin, ang, collision):
-        if collision and self.vel == 0 and ang == 0:
-            ang = 1
+    def update(self, lin, ang):
 
         if lin != 0:
             self.vel += self.acc * lin
@@ -25,7 +23,7 @@ class Car:
                 self.vel = self.max_vel
             elif self.vel < -self.max_vel:
                 self.vel = -self.max_vel
-        elif not collision:
+        else:
             if self.vel > 0:
                 self.vel = max(0, self.vel - self.acc)
             else:
@@ -34,10 +32,6 @@ class Car:
         ang = self.ang_vel * ang
 
         vel = self.vel
-
-        if collision:
-            vel *= -1
-            ang *= -1
 
         if vel < 0:
             ang *= -1
@@ -53,3 +47,24 @@ class Car:
 
         self.pose = tuple(pose)
         # print(self.pose)
+    def bounce(self, ang, mult=2):
+        vel = -1 * self.vel * mult
+        ang *= -self.ang_vel * mult
+        pose = [0, 0, 0]
+        pose[0] = self.pose[0] + vel * math.cos(self.pose[2] * math.pi / 180)
+        pose[1] = self.pose[1] - vel * math.sin(self.pose[2] * math.pi / 180)
+        pose[2] = self.pose[2] + ang
+        pose[2] %= 360
+        if pose[2] < 0:
+            pose[2] += 360
+
+        self.pose = tuple(pose)
+        self.vel = 0
+    
+    def shift(self, x, y):
+        self.vel = 0        
+        pose = [0, 0, 0]
+        pose[0] = self.pose[0] + x
+        pose[1] = self.pose[1] + y
+        pose[2] = self.pose[2]
+        self.pose = tuple(pose)

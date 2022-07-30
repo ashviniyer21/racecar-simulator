@@ -55,20 +55,33 @@ FPS = 60
 
 run = True
 
-car = Car(5, 0.1, 10, (32, 32, 0))
+car = Car(5, 0.05, 5, (32, 32, 0))
 
 collision = False
+
+def check_collision(pose, rotated_car, new_rect):
+    gridx = int(pose[0] // IMAGE_WIDTH)
+    gridy = int(pose[1] // IMAGE_HEIGHT)
+    car_mask = pg.mask.from_surface(rotated_car)
+    for i in range(gridx, gridx + 2):
+        for j in range(gridy, gridy + 2):
+            if i == len(track[0]) or j == len(track) or track_mask[j][i] == None:
+                continue
+            offset = (new_rect.topleft[0] - i * IMAGE_WIDTH, new_rect.topleft[1] - j * IMAGE_HEIGHT)
+            temp = track_mask[j][i].overlap(car_mask, offset)
+            if temp != None:
+                return temp
+    return None
 
 lin = 0
 ang = 0
 
 while run:
 
+
     clock.tick(FPS)
 
-    for i in range(len(track)):
-        for j in range(len(track[i])):
-            WINDOW.blit(track[i][j], (j * IMAGE_WIDTH, i * IMAGE_HEIGHT))
+    car.update(lin, ang)
 
     pose = car.get_pose()
 
@@ -78,7 +91,6 @@ while run:
     new_rect = rotated_car.get_rect(
         center=CAR.get_rect(topleft=pose[0:2]).center)
 
-    WINDOW.blit(rotated_car, new_rect.topleft)
 
     pg.display.update()
 
@@ -86,41 +98,56 @@ while run:
         if event == pg.QUIT:
             run = False
             break
-    
-    if not collision:
 
-        keys = pg.key.get_pressed()
+    keys = pg.key.get_pressed()
 
-        lin = 0
-        ang = 0
+    lin = 0
+    ang = 0
 
-        if keys[pg.K_w]:
-            lin += 1
-        if keys[pg.K_s]:
-            lin -= 1
-        if keys[pg.K_a]:
-            ang += 1
-        if keys[pg.K_d]:
-            ang -= 1
+    if keys[pg.K_w]:
+        lin += 1
+    if keys[pg.K_s]:
+        lin -= 1
+    if keys[pg.K_a]:
+        ang += 1
+    if keys[pg.K_d]:
+        ang -= 1
+
+    collision = check_collision(pose, rotated_car, new_rect)
 
 
-    collision = False
+    # print(lin, ang)
 
-    gridx = int(pose[0] // IMAGE_WIDTH)
-    gridy = int(pose[1] // IMAGE_HEIGHT)
-    car_mask = pg.mask.from_surface(rotated_car)
 
-    for i in range(gridx, gridx + 2):
-        for j in range(gridy, gridy + 2):
-            if gridx == len(track[0]) or gridy == len(track) or track_mask[gridy][gridx] == None:
-                continue
-            offset = (pose[0] - gridx * IMAGE_WIDTH, pose[1] - gridy * IMAGE_HEIGHT)
-            temp = track_mask[gridy][gridx].overlap(car_mask, offset)
-            if temp != None:
-                collision = True
+    while collision != None:
+        xshift = 0
+        yshift = 0
+        if(collision[0] < 20):
+            xshift = 1
+        elif(collision[0] > 100):
+            xshift = -1
+        if(collision[1] < 20):
+            yshift = 1
+        elif(collision[1] > 100):
+            yshift = -1
+        
+        car.shift(xshift, yshift)
 
-    print(lin, ang)
+        pose = car.get_pose()
+        print(pose)
 
-    car.update(lin, ang, collision)
+
+        rotated_car = pg.transform.rotate(CAR, pose[2])
+
+        new_rect = rotated_car.get_rect(
+            center=CAR.get_rect(topleft=pose[0:2]).center)
+        
+        collision = check_collision(pose, rotated_car, new_rect)
+
+    for i in range(len(track)):
+        for j in range(len(track[i])):
+            WINDOW.blit(track[i][j], (j * IMAGE_WIDTH, i * IMAGE_HEIGHT))
+
+    WINDOW.blit(rotated_car, new_rect.topleft)
 
 pg.quit()
