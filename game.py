@@ -75,7 +75,7 @@ checkpoints.append(checkpoints[0])
 
 print(checkpoints)
 
-laps = 1
+laps = 3
 cp_counter = 0
 
 for i in range(len(track)):
@@ -101,6 +101,12 @@ IMAGE_WIDTH, IMAGE_HEIGHT = HORIZONTAL.get_width(), HORIZONTAL.get_height()
 
 WINDOW = pg.display.set_mode((IMAGE_WIDTH * len(track[0]), IMAGE_HEIGHT * len(track)), pg.RESIZABLE)
 pg.display.set_caption("Racecar Simulator")
+
+pg.init()
+
+font = pg.font.Font(pg.font.get_default_font(), 12)
+
+text = font.render("Laps left: " + str(laps), True, pg.Color(0, 0, 0, 1))
 
 clock = pg.time.Clock()
 
@@ -221,6 +227,7 @@ while run:
         if cp_counter == len(checkpoints):
             cp_counter = 0
             laps -= 1
+            text = font.render("Laps left: " + str(laps), True, pg.Color(0, 0, 0, 1))
             if laps == 0:
                 print("You won!")
                 break
@@ -234,6 +241,8 @@ while run:
     WINDOW.blit(FINISH_LINE, (finishlineloc[0] + offset[0], finishlineloc[1] + offset[1]))
     
     WINDOW.blit(rotated_car, (new_rect.topleft[0] + offset[0], new_rect.topleft[1] + offset[1]))
+
+    WINDOW.blit(text, (16, 16))
 
 
 pg.quit()
