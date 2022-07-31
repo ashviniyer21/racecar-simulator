@@ -7,6 +7,7 @@ TOP_LEFT = pg.image.load("images/topleft.png")
 TOP_RIGHT = pg.image.load("images/topright.png")
 BOTTOM_LEFT = pg.image.load("images/bottomleft.png")
 BOTTOM_RIGHT = pg.image.load("images/bottomright.png")
+FINISH_LINE = pg.image.load("images/finishline.png")
 
 HORIZONTAL_MASK = pg.mask.from_surface(pg.image.load("images/horizontalmask.png"))
 VERTICAL_MASK = pg.mask.from_surface(pg.image.load("images/verticalmask.png"))
@@ -18,12 +19,64 @@ BOTTOM_RIGHT_MASK = pg.mask.from_surface(pg.image.load("images/bottomrightmask.p
 GRASS = pg.image.load("images/grass.png")
 CAR = pg.transform.scale(pg.image.load("images/car.png"), (60, 48))
 
+def get_next(pos, dir):
+    new = [pos[0], pos[1]]
+    if dir == 0:
+        new[0] += 1
+    elif dir == 90:
+        new[1] -= 1
+    elif dir == 180:
+        new[0] -= 1
+    else:
+        new[1] += 1
+    return new
+
+start = [0, 2, 90] #Grid space, angle for starting driving
+
 track = [
     [TOP_LEFT, HORIZONTAL, HORIZONTAL, TOP_RIGHT],
     [VERTICAL, GRASS, GRASS, VERTICAL],
     [BOTTOM_LEFT, HORIZONTAL, HORIZONTAL, BOTTOM_RIGHT]
     ]
 track_mask = []
+
+checkpoints = []
+
+pos = start[0:2]
+dir = start[2]
+
+pos = get_next(pos, dir)
+while pos[0] != start[0] or pos[1] != start[1]:
+    checkpoints.append(pos)
+    if track[pos[1]][pos[0]] == TOP_LEFT:
+        if(dir == 90):
+            dir = 0
+        else:
+            dir = 270
+    if track[pos[1]][pos[0]] == TOP_RIGHT:
+        if(dir == 90):
+            dir = 180
+        else:
+            dir = 270
+    if track[pos[1]][pos[0]] == BOTTOM_LEFT:
+        if(dir == 270):
+            dir = 0
+        else:
+            dir = 90
+    if track[pos[1]][pos[0]] == BOTTOM_RIGHT:
+        if(dir == 270):
+            dir = 180
+        else:
+            dir = 90
+    pos = get_next(pos, dir)
+
+checkpoints.append(pos)
+checkpoints.append(checkpoints[0])
+
+print(checkpoints)
+
+laps = 1
+cp_counter = 0
 
 for i in range(len(track)):
     row = []
@@ -46,7 +99,7 @@ for i in range(len(track)):
 
 IMAGE_WIDTH, IMAGE_HEIGHT = HORIZONTAL.get_width(), HORIZONTAL.get_height()
 
-WINDOW = pg.display.set_mode((IMAGE_WIDTH * len(track[0]), IMAGE_HEIGHT * len(track)))
+WINDOW = pg.display.set_mode((IMAGE_WIDTH * len(track[0]), IMAGE_HEIGHT * len(track)), pg.RESIZABLE)
 pg.display.set_caption("Racecar Simulator")
 
 clock = pg.time.Clock()
@@ -55,9 +108,21 @@ FPS = 60
 
 run = True
 
-car = Car(5, 0.05, 5, (32, 32, 0))
+car = Car(5, 0.05, 3, (IMAGE_WIDTH / 4 + start[0] * IMAGE_WIDTH, IMAGE_HEIGHT / 4 + start[1] * IMAGE_HEIGHT, start[2]))
 
 collision = False
+
+finishlineloc = [0, 0]
+
+finish1 = checkpoints[0]
+finish2 = pos
+if finish1[0] == finish2[0]:
+    finishlineloc[0] = finish1[0] * IMAGE_WIDTH + 16
+    finishlineloc[1] = max(finish1[1], finish2[1]) * IMAGE_HEIGHT - 8
+else:
+    finishlineloc[1] = finish1[0] * IMAGE_HEIGHT + 16
+    finishlineloc[0] = max(finish1[0], finish2[0]) * IMAGE_HEIGHT - 8
+    FINISH_LINE = pg.transform.rotate(FINISH_LINE, 90)
 
 def check_collision(pose, rotated_car, new_rect):
     gridx = int(pose[0] // IMAGE_WIDTH)
@@ -119,6 +184,7 @@ while run:
     # print(lin, ang)
 
 
+
     while collision != None:
         xshift = 0
         yshift = 0
@@ -134,7 +200,6 @@ while run:
         car.shift(xshift, yshift)
 
         pose = car.get_pose()
-        print(pose)
 
 
         rotated_car = pg.transform.rotate(CAR, pose[2])
@@ -144,10 +209,31 @@ while run:
         
         collision = check_collision(pose, rotated_car, new_rect)
 
+    center = WINDOW.get_rect().center
+
+    offset = (-pose[0] + center[0], -pose[1] + center[1])
+
+    gridx = int(pose[0] // IMAGE_WIDTH)
+    gridy = int(pose[1] // IMAGE_HEIGHT)
+
+    if checkpoints[cp_counter][0] == gridx and checkpoints[cp_counter][1] == gridy:
+        cp_counter += 1
+        if cp_counter == len(checkpoints):
+            cp_counter = 0
+            laps -= 1
+            if laps == 0:
+                print("You won!")
+                break
+
+    WINDOW.fill((0, 192, 0))
+
     for i in range(len(track)):
         for j in range(len(track[i])):
-            WINDOW.blit(track[i][j], (j * IMAGE_WIDTH, i * IMAGE_HEIGHT))
+            WINDOW.blit(track[i][j], (j * IMAGE_WIDTH + offset[0], i * IMAGE_HEIGHT + offset[1]))
 
-    WINDOW.blit(rotated_car, new_rect.topleft)
+    WINDOW.blit(FINISH_LINE, (finishlineloc[0] + offset[0], finishlineloc[1] + offset[1]))
+    
+    WINDOW.blit(rotated_car, (new_rect.topleft[0] + offset[0], new_rect.topleft[1] + offset[1]))
+
 
 pg.quit()
