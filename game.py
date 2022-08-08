@@ -1,5 +1,12 @@
 import pygame as pg
 from car import Car
+from model import CarEnv
+import os
+import numpy as np
+from stable_baselines3.common.env_checker import check_env
+from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.evaluation import evaluate_policy
 
 
 class Game:
@@ -17,7 +24,7 @@ class Game:
         self.checkpoint_counter = 0
         self.FINISH_LINE = pg.image.load("images/finishline.png")
 
-        self.window = pg.display.set_mode((IMAGE_WIDTH * len(track[0]), IMAGE_HEIGHT * len(track)), pg.RESIZABLE)
+        self.window = pg.display.set_mode((500, 500), pg.RESIZABLE)
         pg.display.set_caption("Racecar Simulator")
         pg.init()
 
@@ -30,6 +37,7 @@ class Game:
         self.finishlineloc = [0, 0]
         self.get_finish_line()
         self.done = False
+        self.update(0, 0)
     
     def get_finish_line(self):
 
@@ -117,7 +125,7 @@ class Game:
                     return temp
         return None
 
-    def update(self, lin, ang, draw=True):
+    def update(self, lin, ang):
 
         if self.done:
             lin = 0
@@ -167,13 +175,17 @@ class Game:
                     print("You won!")
                     self.done = True
         
-        if draw:
-            self.draw(pose, rotated_car, new_rect)
+        self.pose = pose
+        self.rotated_car = rotated_car
+        self.new_rect = new_rect
         
         return checkpoint
 
     
-    def draw(self, pose, rotated_car, new_rect):
+    def draw(self):
+        pose = self.pose
+        rotated_car = self.rotated_car
+        new_rect = self.new_rect
         center = self.window.get_rect().center
 
         offset = (-pose[0] + center[0], -pose[1] + center[1])
@@ -193,10 +205,11 @@ class Game:
         pg.display.update()
 
     
-    def reset(self, draw=True):
+    def reset(self):
         self.car.reset([IMAGE_WIDTH / 4 + start[0] * IMAGE_WIDTH, IMAGE_HEIGHT / 4 + start[1] * IMAGE_HEIGHT, start[2]])
         self.done = False
         self.laps = self.max_laps
+        self.checkpoint_counter = 0
         self.text = self.font.render("Laps left: " + str(self.laps), True, pg.Color(0, 0, 0, 1))
 
 HORIZONTAL = pg.image.load("images/horizontal.png")
@@ -230,39 +243,71 @@ MAX_LAPS = 3
 
 FPS = 60
 
-car = Car(5, 0.05, 3, (IMAGE_WIDTH / 4 + start[0] * IMAGE_WIDTH, IMAGE_HEIGHT / 4 + start[1] * IMAGE_HEIGHT, start[2]))
+car = Car(5, 0.05, 3, np.array([IMAGE_WIDTH / 4 + start[0] * IMAGE_WIDTH, IMAGE_HEIGHT / 4 + start[1] * IMAGE_HEIGHT, start[2]]))
 
 game = Game(track, start, MAX_LAPS, FPS, car)
 
-run = True
+def auto():
 
-lin = 0
-ang = 0
+    env = CarEnv()
+    env.set_race(game)
+    print(env.observation_space.sample())
+    # print(env.action_space.sample())
 
-while run:
+    # episodes = 5
+    # for episode in range(1, episodes+1):
+    #     state = env.reset()
+    #     done = False
+    #     score = 0 
+        
+    #     while not done:
+    #         env.render()
+    #         action = env.action_space.sample()
+    #         n_state, reward, done, info = env.step(action)
+    #         score+=reward
+    #     print('Episode:{} Score:{}'.format(episode, score))
+    # env.close()
+    check_env(env)
 
-    for event in pg.event.get():
-        if event == pg.QUIT:
-            run = False
-            break
+    log_path = os.path.join('Training', 'Logs')
+    model = PPO("MultiInputPolicy", env, verbose=1, tensorboard_log=log_path)
+    model.learn(total_timesteps=1000)
 
-    keys = pg.key.get_pressed()
+
+def manual():
+
+    run = True
 
     lin = 0
     ang = 0
 
-    if keys[pg.K_SPACE]:
-        game.reset()
+    while run:
 
-    if keys[pg.K_w]:
-        lin += 1
-    if keys[pg.K_s]:
-        lin -= 1
-    if keys[pg.K_a]:
-        ang += 1
-    if keys[pg.K_d]:
-        ang -= 1
+        for event in pg.event.get():
+            if event == pg.QUIT:
+                run = False
+                break
 
-    game.update(lin, ang)
+        keys = pg.key.get_pressed()
 
-pg.quit()
+        lin = 0
+        ang = 0
+
+        if keys[pg.K_SPACE]:
+            game.reset()
+
+        if keys[pg.K_w]:
+            lin += 1
+        if keys[pg.K_s]:
+            lin -= 1
+        if keys[pg.K_a]:
+            ang += 1
+        if keys[pg.K_d]:
+            ang -= 1
+
+        game.update(lin, ang)
+        game.draw()
+
+    pg.quit()
+
+manual()

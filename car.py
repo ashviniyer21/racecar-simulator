@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 class Car:
 
@@ -37,7 +38,7 @@ class Car:
             ang *= -1
         
 
-        pose = [0, 0, 0]
+        pose = np.zeros(3)
         pose[0] = self.pose[0] + vel * math.cos(self.pose[2] * math.pi / 180)
         pose[1] = self.pose[1] - vel * math.sin(self.pose[2] * math.pi / 180)
         pose[2] = self.pose[2] + ang
