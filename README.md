@@ -38,3 +38,10 @@ Run `python game.py manual` to run the game manually.
 | Left    | A    |
 | Right   | D    |
 | Reset   | Space|
+
+## Training a Model
+Run `python game.py [number of steps] [name of model]` to train a model with a number of steps and a given name
+If a custom rewward function is desired, edit the `step()` function within `model.py`
+
+## Testing a Model
+Run `python game.py [name of model]` to test a model
