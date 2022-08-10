@@ -27,3 +27,14 @@ Settings for the game can be changed in `settings.json`
 |4      | ![Drag Racing](images/bottomleft.png) |
 |5      | ![Drag Racing](images/bottomright.png)|
 |6      | ![Drag Racing](images/grass.png)      |
+
+## Running the game manually
+Run `python game.py manual` to run the game manually.
+### Controls
+| Control | Key  |
+| ------- | ---- |
+| Forward | W    |
+| Backward| S    |
+| Left    | A    |
+| Right   | D    |
+| Reset   | Space|
