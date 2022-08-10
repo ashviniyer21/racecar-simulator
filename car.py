@@ -47,7 +47,6 @@ class Car:
             pose[2] += 360
 
         self.pose = tuple(pose)
-        # print(self.pose)
     
     def shift(self, x, y):
         self.vel = 0        

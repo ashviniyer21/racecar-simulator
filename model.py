@@ -44,5 +44,6 @@ class CarEnv(Env):
 
     def reset(self):
         self.game.reset()
+        self.game.randomize_start()
         self.set_race(self.game)
         return self.game.get_picture()

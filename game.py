@@ -9,9 +9,16 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.evaluation import evaluate_policy
 import sys
 import json
+import random
 
-
+"""
+Class to store and process everything game related
+"""
 class Game:
+
+    """
+    function to initialize game with specified settings
+    """
     def __init__(self, track, start, laps, fps, car, display_size):
         self.track = track
         self.track_mask = []
@@ -43,6 +50,9 @@ class Game:
         self.done = False
         self.update(0, 0)
     
+    """
+    Finds where the finish line of the race is
+    """
     def get_finish_line(self):
 
         finish1 = self.checkpoints[0]
@@ -55,6 +65,9 @@ class Game:
             self.finishlineloc[0] = max(finish1[0], finish2[0]) * IMAGE_HEIGHT - 8
             self.FINISH_LINE = pg.transform.rotate(self.FINISH_LINE, 90)
     
+    """
+    Calculates all the checkpoints of the race
+    """
     def get_checkpoints(self, pos, dir):
         while pos[0] != start[0] or pos[1] != start[1]:
             self.checkpoints.append(pos)
@@ -83,6 +96,9 @@ class Game:
         self.checkpoints.append(pos)
         self.checkpoints.append(self.checkpoints[0])
 
+    """
+    Returns the image mask of the race for collision checking
+    """
     def get_mask(self):
          for i in range(len(self.track)):
             row = []
@@ -103,6 +119,9 @@ class Game:
                     row.append(None)
             self.track_mask.append(row)
     
+    """
+    Helper function for checkpoints
+    """
     def get_next(self, pos, dir):
         new = [pos[0], pos[1]]
         if dir == 0:
@@ -115,6 +134,9 @@ class Game:
             new[1] += 1
         return new
     
+    """
+    Checks if the car has collided with a wall
+    """
     def check_collision(self, pose, rotated_car, new_rect):
         gridx = int(pose[0] // IMAGE_WIDTH)
         gridy = int(pose[1] // IMAGE_HEIGHT)
@@ -129,6 +151,9 @@ class Game:
                     return temp
         return None
 
+    """
+    Updates the car location based on inputted linear and angular vel
+    """
     def update(self, lin, ang):
 
         if self.done:
@@ -185,7 +210,9 @@ class Game:
         
         return checkpoint
 
-    
+    """
+    Updates the UI with new drawing of scene
+    """
     def draw(self):
         pose = self.pose
         rotated_car = self.rotated_car
@@ -208,7 +235,9 @@ class Game:
 
         pg.display.update()
 
-    
+    """
+    Resets the game to the start
+    """
     def reset(self):
         self.car.reset([IMAGE_WIDTH / 4 + start[0] * IMAGE_WIDTH, IMAGE_HEIGHT / 4 + start[1] * IMAGE_HEIGHT, start[2]])
         self.done = False
@@ -216,8 +245,54 @@ class Game:
         self.checkpoint_counter = 0
         self.text = self.font.render("Laps left: " + str(self.laps), True, pg.Color(0, 0, 0, 1))
     
+    """
+    Returns a picture of the current scene in rgb pixels
+    """
     def get_picture(self):
         return np.array(pg.surfarray.pixels3d(self.window)).astype(np.uint8)
+    
+
+    """
+    Randomizes the starting position of the car
+    """
+    def randomize_start(self):
+        x = random.randrange(0, len(track[0]))
+        y = random.randrange(0, len(track))
+        while self.track[x][y] == GRASS:
+            x = random.randrange(0, len(track[0]))
+            y = random.randrange(0, len(track))
+        
+        choice = random.randrange(0, 2)
+        if self.track[x][y] == HORIZONTAL:
+            if choice == 0:
+                self.start = [x, y, 0]
+            else:
+                self.start = [x, y, 180]
+        if self.track[x][y] == VERTICAL:
+            if choice == 0:
+                self.start = [x, y, 90]
+            else:
+                self.start = [x, y, 270]
+        if self.track[x][y] == TOP_LEFT:
+            if choice == 0:
+                self.start = [x, y, 0]
+            else:
+                self.start = [x, y, 270]
+        if self.track[x][y] == TOP_RIGHT:
+            if choice == 0:
+                self.start = [x, y, 180]
+            else:
+                self.start = [x, y, 270]
+        if self.track[x][y] == BOTTOM_LEFT:
+            if choice == 0:
+                self.start = [x, y, 0]
+            else:
+                self.start = [x, y, 90]
+        else:
+            if choice == 0:
+                self.start = [x, y, 180]
+            else:
+                self.start = [x, y, 90]
 
 HORIZONTAL = pg.image.load("images/horizontal.png")
 VERTICAL = pg.image.load("images/vertical.png")
