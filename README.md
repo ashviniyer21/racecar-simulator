@@ -20,4 +20,10 @@ Settings for the game can be changed in `settings.json`
 
 |Number | Piece |
 |------ | ----- |
-|0      | ![Drag Racing](images/horizontal.png)|
+|0      | ![Drag Racing](images/horizontal.png) |
+|1      | ![Drag Racing](images/vertical.png)   |
+|2      | ![Drag Racing](images/topleft.png)    |
+|3      | ![Drag Racing](images/topright.png)   |
+|4      | ![Drag Racing](images/bottomleft.png) |
+|5      | ![Drag Racing](images/bottomright.png)|
+|6      | ![Drag Racing](images/grass.png)      |
