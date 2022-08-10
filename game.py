@@ -7,10 +7,12 @@ from stable_baselines3.common.env_checker import check_env
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.evaluation import evaluate_policy
+import sys
+import json
 
 
 class Game:
-    def __init__(self, track, start, laps, fps, car):
+    def __init__(self, track, start, laps, fps, car, display_size):
         self.track = track
         self.track_mask = []
         self.get_mask()
@@ -23,8 +25,10 @@ class Game:
         self.laps = laps
         self.checkpoint_counter = 0
         self.FINISH_LINE = pg.image.load("images/finishline.png")
+        self.image_dimensions = [IMAGE_WIDTH, IMAGE_HEIGHT]
+        self.display_size = display_size
 
-        self.window = pg.display.set_mode((500, 500), pg.RESIZABLE)
+        self.window = pg.display.set_mode(display_size, pg.RESIZABLE)
         pg.display.set_caption("Racecar Simulator")
         pg.init()
 
@@ -211,6 +215,9 @@ class Game:
         self.laps = self.max_laps
         self.checkpoint_counter = 0
         self.text = self.font.render("Laps left: " + str(self.laps), True, pg.Color(0, 0, 0, 1))
+    
+    def get_picture(self):
+        return np.array(pg.surfarray.pixels3d(self.window)).astype(np.uint8)
 
 HORIZONTAL = pg.image.load("images/horizontal.png")
 VERTICAL = pg.image.load("images/vertical.png")
@@ -229,50 +236,68 @@ BOTTOM_RIGHT_MASK = pg.mask.from_surface(pg.image.load("images/bottomrightmask.p
 GRASS = pg.image.load("images/grass.png")
 CAR = pg.transform.scale(pg.image.load("images/car.png"), (60, 48))
 
-track = [
-    [TOP_LEFT, HORIZONTAL, HORIZONTAL, TOP_RIGHT],
-    [VERTICAL, GRASS, GRASS, VERTICAL],
-    [BOTTOM_LEFT, HORIZONTAL, HORIZONTAL, BOTTOM_RIGHT]
-    ]
+settings = {}
 
-start = [0, 0, 0] #Grid space, angle for starting driving
+with open('settings.json') as json_file:
+    settings = json.load(json_file)
+
+temp_track = settings["track"]
+
+track = []
+
+for row in temp_track:
+    temp = []
+    for val in row:
+        if val == 0:
+            temp.append(HORIZONTAL)
+        elif val == 1:
+            temp.append(VERTICAL)
+        elif val == 2:
+            temp.append(TOP_LEFT)
+        elif val == 3:
+            temp.append(TOP_RIGHT)
+        elif val == 4:
+            temp.append(BOTTOM_LEFT)
+        elif val == 5:
+            temp.append(BOTTOM_RIGHT)
+        else:
+            temp.append(GRASS)
+    track.append(temp)
+
+start = settings["start"]
 
 IMAGE_WIDTH, IMAGE_HEIGHT = HORIZONTAL.get_width(), HORIZONTAL.get_height()
 
-MAX_LAPS = 3
+MAX_LAPS = settings["laps"]
 
-FPS = 60
+FPS = settings["fps"]
 
-car = Car(5, 0.05, 3, np.array([IMAGE_WIDTH / 4 + start[0] * IMAGE_WIDTH, IMAGE_HEIGHT / 4 + start[1] * IMAGE_HEIGHT, start[2]]))
+car_settings = settings["car"]
 
-game = Game(track, start, MAX_LAPS, FPS, car)
+car = Car(car_settings["max_vel"], car_settings["acc"], car_settings["ang_vel"], np.array([IMAGE_WIDTH / 4 + start[0] * IMAGE_WIDTH, IMAGE_HEIGHT / 4 + start[1] * IMAGE_HEIGHT, start[2]]))
 
-def auto():
+DISPLAY_SIZE = (settings["display_size"]["width"], settings["display_size"]["height"])
 
+game = Game(track, start, MAX_LAPS, FPS, car, DISPLAY_SIZE)
+
+def train(n, path):
     env = CarEnv()
     env.set_race(game)
-    print(env.observation_space.sample())
-    # print(env.action_space.sample())
-
-    # episodes = 5
-    # for episode in range(1, episodes+1):
-    #     state = env.reset()
-    #     done = False
-    #     score = 0 
-        
-    #     while not done:
-    #         env.render()
-    #         action = env.action_space.sample()
-    #         n_state, reward, done, info = env.step(action)
-    #         score+=reward
-    #     print('Episode:{} Score:{}'.format(episode, score))
-    # env.close()
-    check_env(env)
-
     log_path = os.path.join('Training', 'Logs')
-    model = PPO("MultiInputPolicy", env, verbose=1, tensorboard_log=log_path)
-    model.learn(total_timesteps=1000)
+    model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    model.learn(total_timesteps=n)
+    model_path = os.path.join('Training', 'Saved Models', path)
+    model.save(model_path)
 
+def test(path):
+    env = CarEnv()
+    env.set_race(game)
+    log_path = os.path.join('Training', 'Logs')
+    model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    model_path = os.path.join('Training', 'Saved Models', path)
+
+    model.load(model_path, env)
+    evaluate_policy(model, env, n_eval_episodes=10, render=True)
 
 def manual():
 
@@ -308,6 +333,28 @@ def manual():
         game.update(lin, ang)
         game.draw()
 
-    pg.quit()
 
-manual()
+inputs = sys.argv
+if len(inputs) > 1:
+    if inputs[1] == 'manual':
+        print("HERE")
+        manual()
+    elif inputs[1] == 'test':
+        if len(inputs) > 2:
+            test(inputs[2])
+        else:
+            print("insufficient arguments")
+    elif inputs[1] == 'train':
+        if len(inputs) > 2:
+            if len(inputs) > 3:
+                train(int(inputs[2]), inputs[3])
+            else:
+                train(int(inputs[2]), 'model_steps_' + inputs[2])
+        else:
+            print("insufficient arguments")
+    else:
+        print("insufficient arguments")
+else:
+    print("insufficient arguments")
+
+pg.quit()
