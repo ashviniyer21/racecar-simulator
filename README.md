@@ -2,6 +2,13 @@
 
 This simulator allows to race a car across a custom track manually or autonomously by training a model.
 
+## Requirements
+- Pygame
+- OpenAI Gym
+- Stable Baselines 3
+- Numpy
+- Json
+
 ## Game Setup
 Settings for the game can be changed in `settings.json`
 
