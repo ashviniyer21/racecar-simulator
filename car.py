@@ -1,8 +1,14 @@
 import math
 import numpy as np
 
+"""
+Function to model car movement
+"""
 class Car:
 
+    """
+    Sets up the car with a given max velocity, acceleration, and angular velocity
+    """
     def __init__(self, max_vel, acc, ang_vel, init_pose):
         self.max_vel = max_vel
         self.acc = acc
@@ -10,12 +16,21 @@ class Car:
         self.pose = init_pose
         self.vel = 0
     
+    """
+    Returns current pose of the car
+    """
     def get_pose(self):
         return self.pose
     
+    """
+    Returns current velocity of the car
+    """
     def get_vel(self):
         return self.vel
     
+    """
+    Updates the car position and velocity given inputs
+    """
     def update(self, lin, ang):
 
         if lin != 0:
@@ -48,6 +63,9 @@ class Car:
 
         self.pose = tuple(pose)
     
+    """
+    Shifts the car to a given input and sets velocity to 0
+    """
     def shift(self, x, y):
         self.vel = 0        
         pose = [0, 0, 0]
@@ -56,6 +74,9 @@ class Car:
         pose[2] = self.pose[2]
         self.pose = tuple(pose)
     
+    """
+    Sets the car to a given pose and sets velocity to 0
+    """
     def reset(self, pose):
         self.vel = 0
         self.pose = pose

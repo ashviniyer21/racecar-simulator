@@ -294,6 +294,8 @@ class Game:
             else:
                 self.start = [x, y, 90]
 
+#Importing images
+
 HORIZONTAL = pg.image.load("images/horizontal.png")
 VERTICAL = pg.image.load("images/vertical.png")
 TOP_LEFT = pg.image.load("images/topleft.png")
@@ -310,6 +312,8 @@ BOTTOM_RIGHT_MASK = pg.mask.from_surface(pg.image.load("images/bottomrightmask.p
 
 GRASS = pg.image.load("images/grass.png")
 CAR = pg.transform.scale(pg.image.load("images/car.png"), (60, 48))
+
+#Loading game settings
 
 settings = {}
 
@@ -355,6 +359,9 @@ DISPLAY_SIZE = (settings["display_size"]["width"], settings["display_size"]["hei
 
 game = Game(track, start, MAX_LAPS, FPS, car, DISPLAY_SIZE)
 
+"""
+Function to train model given n steps
+"""
 def train(n, path):
     env = CarEnv()
     env.set_race(game)
@@ -364,6 +371,9 @@ def train(n, path):
     model_path = os.path.join('Training', 'Saved Models', path)
     model.save(model_path)
 
+"""
+Function to test model
+"""
 def test(path):
     env = CarEnv()
     env.set_race(game)
@@ -374,6 +384,9 @@ def test(path):
     model.load(model_path, env)
     evaluate_policy(model, env, n_eval_episodes=10, render=True)
 
+"""
+Function to play the game with manual controls
+"""
 def manual():
 
     run = True
